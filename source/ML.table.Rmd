@@ -23,13 +23,18 @@ m <- read.table(file = "~/Dropbox/UCR/Investigacion/lbh_cultural_evolution/outpu
 # Read two replicates of ML estimates under the stepping stone algorithm
 ss.r1 <- read.table(file = "~/Dropbox/UCR/Investigacion/lbh_cultural_evolution/output/revbayes/stdout/SteppingStone.txt", header = F, sep = ",")
 ss.r2 <- read.table(file = "~/Dropbox/UCR/Investigacion/lbh_cultural_evolution/output/revbayes/stdout/SteppingStoneR2.txt", header = F, sep = ",")
-
-# make df
-m.ml <-cbind(m, ss.r1, ss.r2)
-colnames(m.ml) <- c("Model", "ss1", "ss2")
+ss.r3 <- read.table(file = "~/Dropbox/UCR/Investigacion/lbh_cultural_evolution/output/revbayes/stdout/SteppingStoneR3.txt", header = F, sep = ",")
 
 # missing models to NA and failed estimations to "Repeat"
-n = 2 # currently two replicates
+n = 3 # currently two replicates
+
+# make df
+m.ml <- m
+for (i in 1:n) {
+  m.ml <- cbind(m.ml, eval(parse(text = paste0("ss.r", i))))
+}
+colnames(m.ml) <- c("Model", paste0("ss",c(1:n)))
+
 
 for(i in 1:n) {
   levels( m.ml[, i + 1]) <- c(levels( m.ml[, i + 1]),"Repeat")
@@ -99,8 +104,22 @@ m.ml <- m.ml %>% separate(Model, c("Lek", "Align", "Record", "Fossils", "Clock")
 m.ml$Clock <- replace_na(data = m.ml$Clock, replace = "Uexp")
 
 # long to wide and rearrange
-m.ml <- pivot_wider(data = m.ml, names_from = Clock, values_from = c(ss1, ss2))
-m.ml <- m.ml[,c(1:5,7,6,8)]
+m.ml <-
+  pivot_wider(
+    data = m.ml,
+    names_from = Clock,
+    values_from =  paste0("ss", c(1:n))
+  )
+
+m.ml <-
+  m.ml[, c(
+    "Lek",
+    "Align",
+    "Record",
+    "Fossils",
+    paste0("ss", c(1:n), "_global"),
+    paste0("ss", c(1:n), "_Uexp")
+  )]
 m.ml  %>%
   kbl() %>%
   kable_minimal()
